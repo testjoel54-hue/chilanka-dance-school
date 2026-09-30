@@ -1,0 +1,16 @@
+{
+  "name": "Chilanka Dance School",
+  "short_name": "Chilanka",
+  "description": "Indian dance classes in Pearland, Texas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fbf6f2",
+  "theme_color": "#3a1024",
+  "icons": [
+    {
+      "src": "/photos/mainLogo.d8ad1d6646ccb1605413.png",
+      "sizes": "318x303",
+      "type": "image/png"
+    }
+  ]
+}

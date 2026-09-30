@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://chilanka-dance-school.vercel.app/sitemap.xml
