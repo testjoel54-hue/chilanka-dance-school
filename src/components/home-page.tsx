@@ -191,60 +191,133 @@ function Magnetic({
 }
 
 function Curtain({ onBegin }: { onBegin?: () => void }) {
-  const [phase, setPhase] = useState<"hold" | "out" | "done">("hold");
+  const [phase, setPhase] = useState<"closed" | "opening" | "done">(
+    "closed",
+  );
+
   const timers = useRef<number[]>([]);
 
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setPhase("done");
-      onBegin?.();
-      return;
-    }
-    timers.current = [
+ const PULL_MS = 6800;
+const FINISH_BUFFER_MS = 500;
+
+  const clearTimers = () => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    timers.current = [];
+  };
+
+  const openCurtain = () => {
+    if (phase !== "closed") return;
+
+    clearTimers();
+
+    setPhase("opening");
+
+    /* Let the curtain start before audio begins */
+    timers.current.push(
       window.setTimeout(() => {
-        setPhase("out");
         onBegin?.();
-      }, 2200),
-      window.setTimeout(() => setPhase("done"), 5000),
-    ];
-    return () => timers.current.forEach((id) => window.clearTimeout(id));
-  }, [onBegin]);
+      }, 500),
+    );
+
+    /*
+      Do NOT remove the curtain exactly when the transform ends.
+      Give the animation a moment to visually settle.
+    */
+    timers.current.push(
+      window.setTimeout(() => {
+        setPhase("done");
+      }, PULL_MS + FINISH_BUFFER_MS),
+    );
+  };
 
   useEffect(() => {
     if (phase === "done") return;
-    const previous = document.body.style.overflow;
+
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+
     return () => {
-      document.body.style.overflow = previous;
+      document.body.style.overflow = previousOverflow;
     };
   }, [phase]);
+
+  useEffect(() => {
+    return () => {
+      clearTimers();
+    };
+  }, []);
 
   if (phase === "done") return null;
 
   return (
-    <div className={`curtain ${phase === "out" ? "is-out" : ""}`}>
+    <div
+      className={`curtain ${
+        phase === "opening" ? "is-out" : ""
+      }`}
+      style={
+        {
+          "--curtain-duration": `${PULL_MS}ms`,
+        } as React.CSSProperties
+      }
+    >
       <div className="curtain-scrim" aria-hidden="true" />
+
       <div className="curtain-glow" aria-hidden="true" />
-      <div className="curtain-panel left" />
-      <div className="curtain-panel right" />
-      <div className="curtain-panel left swag" />
-      <div className="curtain-panel right swag" />
-      <div className="curtain-valance" aria-hidden="true" />
+
+      <div className="curtain-panel left">
+        <div className="curtain-folds" />
+      </div>
+
+      <div className="curtain-panel right">
+        <div className="curtain-folds" />
+      </div>
+
+      <div
+        className="curtain-valance"
+        aria-hidden="true"
+      />
+
       <div className="curtain-mark">
-        <img src={LOGO} alt="" className="h-20 w-20 object-contain" />
-        <p className="text-xs font-bold uppercase tracking-[0.32em] text-purple">Indian Dance School</p>
-        <p className="font-display text-6xl leading-none sm:text-7xl">Chilanka</p>
-        <p className="max-w-xs text-sm text-paper/70">Changing lives through the power of performance</p>
-        <p className="font-display text-2xl italic text-paper/80">The curtain is about to rise.</p>
+        <img
+          src={LOGO}
+          alt=""
+          className="h-20 w-20 object-contain"
+        />
+
+        <p className="text-xs font-bold uppercase tracking-[0.32em] text-purple">
+          Indian Dance School
+        </p>
+
+        <p className="font-display text-6xl leading-none sm:text-7xl">
+          Chilanka
+        </p>
+
+        <p className="max-w-xs text-sm text-paper/70">
+          Changing lives through the power of performance
+        </p>
+
+        <p className="font-display text-2xl italic text-paper/80">
+          The curtain is about to rise.
+        </p>
+
         <button
           type="button"
-          className="press mt-4 inline-flex h-11 items-center rounded-full bg-magenta px-5 text-sm font-semibold text-ink"
-          onClick={() => {
-            timers.current.forEach((id) => window.clearTimeout(id));
-            setPhase("out");
-            timers.current = [window.setTimeout(() => setPhase("done"), 2600)];
-            onBegin?.();
-          }}
+          onClick={openCurtain}
+          disabled={phase !== "closed"}
+          className="
+            press
+            mt-4
+            inline-flex
+            h-11
+            items-center
+            rounded-full
+            bg-magenta
+            px-5
+            text-sm
+            font-semibold
+            text-ink
+            disabled:pointer-events-none
+          "
         >
           Part the curtain
         </button>
